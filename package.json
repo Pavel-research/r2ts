@@ -1,0 +1,35 @@
+{
+  "name": "raml2type-bindings",
+  "version": "0.0.7",
+  "private": false,
+  "scripts": {
+    "compile": "rm -rf dist/ && ./node_modules/typescript/bin/tsc"
+  },
+  "typings": "dist/src/types.d.ts",
+  "main": "dist/src/types",
+  "devDependencies": {
+    "chai": "^2.2.0",
+    "chai-as-promised": "^5.2.0",
+    "gulp": "^3.8.11",
+    "gulp-typedoc": "^1.2.1",
+    "istanbul": "^0.4.2",
+    "mocha": "^2.2.1",
+    "typedoc": "^0.3.12",
+    "typescript": "^2.0.0",
+    "dev-env-installer": "0.0.5",
+    "json-loader": "^0.5.1",
+    "rimraf": "*",
+    "@types/mocha": "*",
+    "@types/chai": "*"
+  },
+  "directories": [
+    "dist"
+  ],
+  "dependencies": {
+    "@types/node": "^6.0.55",
+    "@types/pluralize": "0.0.27",
+    "pluralize": "^3.1.0",
+    "raml-1-parser": "^1.1.13",
+    "ts-model": "0.0.13"
+  }
+}

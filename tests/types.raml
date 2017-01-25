@@ -1,0 +1,33 @@
+#%RAML 1.0 Library
+uses:
+  animals: ./animals.raml
+  annotations: ./annotations.raml
+types:
+  HasId:
+    properties:
+      id: integer
+  Named:
+      properties:
+       name: string
+  Person:
+    type: [ HasId , Named]
+    properties:
+      name: string
+      lastName: string
+      age: number
+      pets?: animals.Pet[]
+  Company:
+    type: HasId
+    displayName: Company
+    description: Company of Heroes
+    (annotations.Elements): ["name"]
+    properties:
+      name: string
+      public?: boolean
+      members: Person[]
+      ownedBy: Company | Person
+  Persons: Person[]
+  #Pet:
+  #  type: animals.Pet
+  #  properties:
+  #    ExtraInfo: string
