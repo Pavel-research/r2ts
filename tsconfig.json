@@ -11,7 +11,8 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "jsx": "react",
-    "outDir": "dist"
+    "outDir": "dist",
+    "rootDirs": ["src","tests"]
   },
   "exclude": [
     "node_modules","typings"

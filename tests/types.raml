@@ -6,16 +6,22 @@ types:
   HasId:
     properties:
       id: integer
+  Items:
+    properties:
+        name:
+          type: string
+        commonNames:
+          type: string[]
+          default: ["Pavel", "Denis", "Max"]
   Named:
       properties:
        name: string
   Person:
     type: [ HasId , Named]
     properties:
-      name: string
       lastName: string
       age: number
-      pets?: animals.Pet[]
+      pets?: Named[]
   Company:
     type: HasId
     displayName: Company
@@ -25,9 +31,13 @@ types:
       name: string
       public?: boolean
       members: Person[]
-      ownedBy: Company | Person
+      ownedBy: Company | Person | string
   Persons: Person[]
-  #Pet:
-  #  type: animals.Pet
-  #  properties:
-  #    ExtraInfo: string
+  Pet:
+    type: animals.Pet
+    properties:
+      ExtraInfo: string
+  Map:
+    properties:
+      //: string
+  OwnedBy: Company | Person | string

@@ -1,0 +1,17 @@
+#%RAML 1.0 Library
+uses:
+  core: coreLib.raml
+types:
+  Type:
+    properties:
+      name:
+        type: string
+        (core.unique): true
+      description?: core.markdown
+      type:
+        type: string
+
+  Library:
+    properties:
+      name: string
+      types: Type[]

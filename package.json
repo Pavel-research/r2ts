@@ -5,8 +5,8 @@
   "scripts": {
     "compile": "rm -rf dist/ && ./node_modules/typescript/bin/tsc"
   },
-  "typings": "dist/src/types.d.ts",
-  "main": "dist/src/types",
+  "typings": "dist/src/main.d.ts",
+  "main": "dist/src/main",
   "devDependencies": {
     "chai": "^2.2.0",
     "chai-as-promised": "^5.2.0",
