@@ -63,6 +63,7 @@ export class BasicPagingOperationTransformer implements OperationTransformer{
         return t;
     }
 }
+
 export class CRUDOperationsTransformer implements OperationTransformer{
 
     operation(t:rtb.Operation,emmitter:JavaScriptMetaEmmitter):rtb.Operation{
@@ -70,6 +71,7 @@ export class CRUDOperationsTransformer implements OperationTransformer{
             this.recordLink(t, "create", emmitter, "constructors");
             this.recordLink(t, "update", emmitter, "updaters");
             this.recordLink(t, "delete", emmitter, "destructors");
+            this.recordLink(t, "list", emmitter, "listers");
         }
         return t;
     }
@@ -89,6 +91,11 @@ export class CRUDOperationsTransformer implements OperationTransformer{
                         }
                     }
                 })
+                if (aName=="listers"&&t.result){
+                    target=emmitter.idToType[<string>(<rtb.ArrayType>t.result).itemType];
+                    t.type=t.result;
+                    delete t.result;
+                }
             }
             if (target) {
                 emmitter.recordExtraMeta(aName, target, t.id);

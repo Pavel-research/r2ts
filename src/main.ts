@@ -14,7 +14,8 @@ export function process(x:rp.api10.LibraryBase):ProcessingResult{
     var c=x.highLevel().lowLevel().unit().contents();
     var rs={
         ramlSource:c,
-        types:{}
+        types:{},
+        annotations:{}
     }
     if (x.kind()=="Library"){
         var emmitter=new typeVisitor.JavaScriptMetaEmmitter();
@@ -61,12 +62,24 @@ export function process(x:rp.api10.LibraryBase):ProcessingResult{
         var secDefinitions=(<rp.api10.Api>x).securitySchemes().map(x=>emmitter.visitSecurityDefinition(x));
         secDefinitions.forEach(s=>{
             rs.types[s.id]=s;
+        });//
+        rs.types['_module_']={};
+        rs.types['_module_'].type="module";
+        (<rp.api10.Api>x).highLevel().attrs().forEach(x=>{
+            if (x.name()=="annotations"){
+                var obj=x.lowLevel().dumpToObject(true);
+                var an=Object.keys(obj)[0];
+                var av=obj[an];
+                an=an.substring(1,an.length-1);
+                if (an.indexOf('.')!=-1){
+                    an=an.substring(an.indexOf('.')+1);
+                }
+                rs.types['_module_'][an]=av;
+            }
         })
-
         Object.keys(emmitter.extraTypes).forEach(x=>{
             rs.types[x]=emmitter.extraTypes[x];
         })
-
     }
     return rs;
 }
