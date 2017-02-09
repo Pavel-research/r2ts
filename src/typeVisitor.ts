@@ -57,7 +57,7 @@ export class BasicPagingOperationTransformer implements OperationTransformer{
                 }
             })
         }
-        delete t.annotations;
+        //delete t.annotations;
         delete t.result;
         t["paging"]=true;
         return t;
@@ -72,6 +72,7 @@ export class CRUDOperationsTransformer implements OperationTransformer{
             this.recordLink(t, "update", emmitter, "updaters");
             this.recordLink(t, "delete", emmitter, "destructors");
             this.recordLink(t, "list", emmitter, "listers");
+            this.recordLink(t, "memberCollection", emmitter, "memberCollections");
         }
         return t;
     }
@@ -94,17 +95,33 @@ export class CRUDOperationsTransformer implements OperationTransformer{
                 if (aName=="listers"&&t.result){
                     target=emmitter.idToType[<string>(<rtb.ArrayType>t.result).itemType];
                     t.type=t.result;
-                    delete t.result;
+                    //delete t.result;
                 }
+
             }
             if (target) {
+                if (aName=="memberCollections"){
+                    if (!(<rtb.ObjectType>target).properties){
+                        (<rtb.ObjectType>target).properties={};
+                    }
+                    (<rtb.ObjectType>target).properties[t.id]={
+                        id: "",
+                        displayName: t.displayName,
+                        description: t.description,
+                        type: t.id
+                    }
+                    t.type="view";
+
+                    //hehe
+                    return;
+                }
                 emmitter.recordExtraMeta(aName, target, t.id);
             }
         }
     }
 }
 
-let operationTransformers:OperationTransformer[]=[new BasicPagingOperationTransformer(),new CRUDOperationsTransformer()]
+let operationTransformers:OperationTransformer[]=[new CRUDOperationsTransformer(),new BasicPagingOperationTransformer()]
 export class TypeVisitor<T> {
 
     tm: Map<rp.hl.ITypeDefinition,TypeVisitorInfo<T> > = new Map();
@@ -353,8 +370,8 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
         var result:rtb.Operation={
             id:this.normalizeId(t.methodId()),
             baseUri: t.ownerApi().baseUri()?t.ownerApi().baseUri().value():null,
-            displayName:t.displayName(),
-            description: t.description()?t.description().value():null,
+            displayName:t.displayName()?t.displayName():t.parentResource().displayName(),
+            description: t.description()?t.description().value():null,//
             url: t.parentResource().completeRelativeUri(),
             method: t.method(),
             parameters:[],
