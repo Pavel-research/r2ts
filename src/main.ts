@@ -80,6 +80,7 @@ export function process(x:rp.api10.LibraryBase):ProcessingResult{
         Object.keys(emmitter.extraTypes).forEach(x=>{
             rs.types[x]=emmitter.extraTypes[x];
         })
+
     }
     return rs;
 }

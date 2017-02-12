@@ -155,20 +155,37 @@ export class TypeVisitor<T> {
             return this.unitIds[path];
         }
         source=source.root();
-        var result:string=null;
-        source.children().forEach(x=>{
-            let a=x.asAttr();
-            if (a){
-                if (a.name()=="annotations"){
-                    let v=a.value();
-                    var obj=v.lowLevel().dumpToObject();
-                    if (obj["(id)"]){
-                        result=obj["(id)"];
+        var result = this.idOfUnit(source);
+        this.unitIds[path]=result;
+        return result;
+    }
+    hlRoot(pType: ti.IParsedType){
+        var source:rp.hl.IHighLevelNode=pType.getExtra("SOURCE");
+        if (!source){
+            return null;
+        }
+        var path="";
+        if (!source.root){
+            source=(<any>source)._node.unit().highLevel();
+            //path=(<any>source)._node.unit().absolutePath();
+        }
+        source=source.root();
+        return source;
+    }
+    private idOfUnit(source:rp.hl.IHighLevelNode) {
+        var result: string = null;
+        source.children().forEach(x => {
+            let a = x.asAttr();
+            if (a) {
+                if (a.name() == "annotations") {
+                    let v = a.value();
+                    var obj = v.lowLevel().dumpToObject();
+                    if (obj["(id)"]) {
+                        result = obj["(id)"];
                     }
                 }
             }
         })
-        this.unitIds[path]=result;
         return result;
     }
 
@@ -308,7 +325,9 @@ export const Ignored = {
 interface Emitter {
     (t: ti.IParsedType, f: ti.ITypeFacet, target: any);
 }
-
+export enum ReferenceKind{
+    NONE,TYPE,PROPERTY
+}
 
 function transfer(f: ti.ITypeFacet, target: any) {
     target[f.facetName()] = f.value();
@@ -325,7 +344,8 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
     defaultPath:string
 
     emitType(f: ti.ITypeFacet) {
-        var vl = this.processParsedType((<ITyped><any>f).type);
+
+        var vl = this.processParsedType((<ITyped><any>f).type,false);
         return vl;
     }
 
@@ -364,6 +384,51 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
             rs+=c;
         }
         return rs;
+    }
+    needTransform(namespace:string,annotationName:string,t:rp.api10.Api|rp.api10.Library):ReferenceKind{
+        var usedLibrary:rp.api10.Library=null;
+        t.uses().forEach(x=>{
+            if (x.key()==namespace){
+                usedLibrary=x.ast();
+            }
+        })
+        var result=ReferenceKind.NONE;
+        usedLibrary.annotationTypes().forEach(x=>{
+            if (x.name()==annotationName){
+                var tp=x.type();
+                tp.forEach(n=>{
+                    if (n.indexOf("RAMLReferenceExpression")!=-1){
+                        result=ReferenceKind.PROPERTY;
+                    }
+                    if (n.indexOf("RAMLTypeName")!=-1){
+                        result=ReferenceKind.TYPE;
+                    }
+                })
+            }
+        })
+        return result;
+    }
+    remapUnit(namespace:string,t:rp.api10.Api|rp.api10.Library){
+        var usedLibrary:rp.api10.Library=null;
+        t.uses().forEach(x=>{
+            if (x.key()==namespace){
+                usedLibrary=x.ast();
+            }
+        })
+        if (usedLibrary) {
+            var p = usedLibrary.highLevel().lowLevel().unit().absolutePath();
+            var i = p.lastIndexOf('/');
+            if (i != -1) {
+                p = p.substring(i + 1);
+            }
+            i = p.lastIndexOf('.');
+            if (i != -1) {
+                p = p.substring(0, i);
+            }
+
+            return p;
+        }
+        return namespace;
     }
     visitMethod(t: rp.api10.Method) {
         var id=t.methodId();
@@ -429,8 +494,29 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
         anDump.forEach(x=>{
             Object.keys(x).forEach(y=>{
                 var n=y.substring(1,y.length-1);
+
                 if (n.indexOf('.')!=-1){
+                    //this is an annotation from a library
+                    var libPrefix=n.substring(0,n.indexOf('.'));
                     n=n.substring(n.indexOf('.')+1);
+                    var nt=this.needTransform(libPrefix,n,t.ownerApi());
+                    if (nt!=ReferenceKind.NONE){
+
+                        var vl=x[y];
+                        if (vl&&typeof vl=="string") {
+                            var fd = vl.indexOf('.');
+                            if (fd != -1) {
+                                var namespace = vl.substring(0,fd);
+                                if (true){
+                                    var newName=this.remapUnit(namespace,t.ownerApi());
+                                    vl=newName+"_"+vl.substring(fd+1);
+                                    x[y]=vl;
+                                }
+                                //console.log(vl);
+                            }
+                        }
+
+                    }
                 }
                 clearedAnnotations[n]=x[y];
             })
@@ -545,7 +631,7 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
             var nm=pType.getExtra("nominal")
             name=nm._name;
         }
-        if (source) {
+        if (source&&name) {
             var p =source._node.unit().absolutePath();
             if (p!=this.defaultPath){
                var i=p.lastIndexOf('/');
@@ -598,7 +684,7 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
         meta.push(value);
     }
     idToType: { [name:string]:any}={}
-    private processParsedType(pType: ti.IParsedType) {
+    private processParsedType(pType: ti.IParsedType,global=true) {
         if (this.visited.has(pType)){
             return this.visited.get(pType);
         }
@@ -610,6 +696,11 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
                     s=pType.subTypes()[0].name()
                 }
             }
+
+
+        }
+        else{
+            global=true;
         }
         var superTypes: string[] = []
         var supers:ti.IParsedType[]=[];
@@ -627,7 +718,9 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
             superTypes.push(this.alias(x));
         })
         var rs: any = s ? {id: s} : {};
-        this.idToType[s]=rs;
+        if (global) {
+            this.idToType[s] = rs;
+        }
         this.visited.set(pType,rs);
         if (this.extraMeta.has(pType)){
             var extra=this.extraMeta.get(pType);
@@ -662,7 +755,33 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
                 return;
             }
             if (x.kind() == ti.tsInterfaces.MetaInformationKind.Annotation) {
+                var vl=x.value();
+                var fn=x.facetName();
+                var rsi=fn.indexOf('.');
                 rs[this.simpleName(x.facetName())] = x.value()
+                if (rsi!=-1) {
+                    var libPrefix=fn.substring(0,rsi);
+                    var n=fn.substring(rsi+1);
+                    var api=this.hlRoot(pType).wrapperNode();
+                    var nt = this.needTransform(libPrefix, n,<rp.api10.Library>api);
+                    if (nt != ReferenceKind.NONE) {
+
+                        if (vl&&typeof  vl=="string") {
+                            var fd = vl.indexOf('.');
+                            if (fd != -1) {
+                                var namespace = vl.substring(0, fd);
+                                if (true) {
+                                    var newName = this.remapUnit(namespace, <rp.api10.Library>api);
+                                    if (newName!=namespace) {
+                                        vl = newName + "_" + vl.substring(fd + 1);
+                                        rs[this.simpleName(x.facetName())] = vl
+                                    }
+                                }
+                                //console.log(vl);
+                            }
+                        }
+                    }
+                }
                 return;
             }
             //console.log(x.facetName())
@@ -677,6 +796,29 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
             if (rs.id) {
                 this.extraTypes[rs.id] = rs;
             }
+        }
+        if (rs["computedProperties"]){
+            var cp=rs["computedProperties"];
+            Object.keys(cp).forEach(x=>{
+                if (!rs["properties"]){
+                    rs["properties"]={};
+                }
+                var props=rs["properties"]
+                var prop={};
+                var val=cp[x];
+                if (typeof val=="string"){
+                    props[x]={
+                        type: "string",
+                        computeFunction: val,
+                        readonly:true,
+                        virtual: true
+                    }
+
+                }
+                else{
+                    props[x]=val;
+                }
+            })
         }
         return rs;
     }

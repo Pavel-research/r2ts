@@ -1,0 +1,17 @@
+#%RAML 1.0 Library
+annotationTypes:
+  Transform: any
+types:
+  Point:
+    properties:
+      x: number
+      y: number
+  AnotherPoint:
+    properties:
+      X: number
+      Y: number
+(Transform):
+  Point<->AnotherPoint:
+    - x==X //weird
+    - y==Y //weird
+  
