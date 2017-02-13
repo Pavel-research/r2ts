@@ -29,9 +29,7 @@ export class TypeVisitorInfo<Payload> {
 }
 
 export interface OperationTransformer{
-
     operation(t:rtb.Operation,emmitter:JavaScriptMetaEmmitter):rtb.Operation
-
 }
 export class BasicPagingOperationTransformer implements OperationTransformer{
 
@@ -715,6 +713,7 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
             }
         })
         supers.forEach(x => {
+            this.processParsedType(x);
             superTypes.push(this.alias(x));
         })
         var rs: any = s ? {id: s} : {};
@@ -746,7 +745,6 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
         }
 
         f.forEach(x => {
-
             if (Ignored[x.facetName()]) {
                 return
             }
