@@ -69,6 +69,7 @@ export class CRUDOperationsTransformer implements OperationTransformer{
             this.recordLink(t, "create", emmitter, "constructors");
             this.recordLink(t, "update", emmitter, "updaters");
             this.recordLink(t, "delete", emmitter, "destructors");
+            this.recordLink(t, "details", emmitter, "details");
             this.recordLink(t, "list", emmitter, "listers");
             this.recordLink(t, "memberCollection", emmitter, "memberCollections");
         }
@@ -430,10 +431,18 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
     }
     visitMethod(t: rp.api10.Method) {
         var id=t.methodId();
+        var dn=t.displayName()?t.displayName():t.parentResource().displayName();
+        if (dn.startsWith("/")){
+            dn=dn.substring(1);
+
+        }
+        if (dn.length>1){
+            dn=dn.charAt(0).toUpperCase()+dn.substring(1);
+        }
         var result:rtb.Operation={
             id:this.normalizeId(t.methodId()),
             baseUri: t.ownerApi().baseUri()?t.ownerApi().baseUri().value():null,
-            displayName:t.displayName()?t.displayName():t.parentResource().displayName(),
+            displayName:dn,
             description: t.description()?t.description().value():null,//
             url: t.parentResource().completeRelativeUri(),
             method: t.method(),
@@ -808,6 +817,29 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
                     props[x]={
                         type: "string",
                         computeFunction: val,
+                        readonly:true,
+                        virtual: true
+                    }
+
+                }
+                else{
+                    props[x]=val;
+                }
+            })
+        }
+        if (rs["foreignProperties"]){
+            var cp=rs["foreignProperties"];
+            Object.keys(cp).forEach(x=>{
+                if (!rs["properties"]){
+                    rs["properties"]={};
+                }
+                var props=rs["properties"]
+                var prop={};
+                var val=cp[x];
+                if (typeof val=="string"){
+                    props[x]={
+                        type: "string",
+                        remote: val,
                         readonly:true,
                         virtual: true
                     }
