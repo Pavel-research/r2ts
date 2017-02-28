@@ -9,6 +9,7 @@ In a few words it performs following transformations:
 * collect used types from libraries and put them into main namespace with unique name
 * collect information about CRUD operations/member collections related to types and insert this information in a serialized types
 * merge facets and annotations into single namespace (types only).
+* discover map types
 * few more minor transforms.
 
 One example of transform is:
@@ -60,6 +61,61 @@ transforms to:
 }
 
 
+```
+
+in a more complex case:
+
+```yaml
+#%RAML 1.0 Library
+uses:
+  core: coreLib.raml
+types:
+  Party:
+    properties:
+      name:
+        type: string
+      leaders:
+        (core.enumValues): "$.members"
+      members:
+        properties:
+          //:
+            type: string
+            displayName: Class
+            enum: ["Warrior", "Mage", "Priest", "Ranger"]
+```
+transforms to something like
+```json
+{
+  "Party": {
+    "id": "Party",
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "required": true
+      },
+      "leaders": {
+        "type": "string",
+        "enumValues": "$.members",
+        "required": true
+      },
+      "members": {
+        "type": "map",
+        "componentType": {
+          "type": "string",
+          "displayName": "Class",
+          "enum": [
+            "Warrior",
+            "Mage",
+            "Priest",
+            "Ranger"
+          ]
+        },
+        "required": true
+      }
+    }
+  }
+}
 ```
 
 Used format is not thought as final, it is just a very temporary solution to play with. 
