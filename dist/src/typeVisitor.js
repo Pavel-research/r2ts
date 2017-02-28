@@ -8,14 +8,14 @@ var rp = require("raml-1-parser");
 var ti = rp.ds.rt;
 var tsm = require("ts-model");
 var ts_model_1 = require("ts-model");
+var TypeKind;
 (function (TypeKind) {
     TypeKind[TypeKind["VALUE"] = 0] = "VALUE";
     TypeKind[TypeKind["OBJECT"] = 1] = "OBJECT";
     TypeKind[TypeKind["ARRAY"] = 2] = "ARRAY";
     TypeKind[TypeKind["UNION"] = 3] = "UNION";
     TypeKind[TypeKind["EXTERNAL"] = 4] = "EXTERNAL";
-})(exports.TypeKind || (exports.TypeKind = {}));
-var TypeKind = exports.TypeKind;
+})(TypeKind = exports.TypeKind || (exports.TypeKind = {}));
 var TypeVisitorInfo = (function () {
     function TypeVisitorInfo() {
         this.superTypes = [];
@@ -63,6 +63,7 @@ var CRUDOperationsTransformer = (function () {
             this.recordLink(t, "create", emmitter, "constructors");
             this.recordLink(t, "update", emmitter, "updaters");
             this.recordLink(t, "delete", emmitter, "destructors");
+            this.recordLink(t, "details", emmitter, "details");
             this.recordLink(t, "list", emmitter, "listers");
             this.recordLink(t, "memberCollection", emmitter, "memberCollections");
         }
@@ -226,9 +227,10 @@ exports.parsedType = parsedType;
 var TypeScriptInterfaceEmmitter = (function (_super) {
     __extends(TypeScriptInterfaceEmmitter, _super);
     function TypeScriptInterfaceEmmitter() {
-        _super.apply(this, arguments);
-        this.defaultModule = new ts_model_1.TSAPIModule();
-        this.modules = {};
+        var _this = _super.apply(this, arguments) || this;
+        _this.defaultModule = new ts_model_1.TSAPIModule();
+        _this.modules = {};
+        return _this;
     }
     TypeScriptInterfaceEmmitter.prototype.getModule = function (t) {
         return this.defaultModule;
@@ -292,32 +294,31 @@ exports.Ignored = {
     typeOf: true,
     hasPropertiesFacet: true
 };
+var ReferenceKind;
 (function (ReferenceKind) {
     ReferenceKind[ReferenceKind["NONE"] = 0] = "NONE";
     ReferenceKind[ReferenceKind["TYPE"] = 1] = "TYPE";
     ReferenceKind[ReferenceKind["PROPERTY"] = 2] = "PROPERTY";
-})(exports.ReferenceKind || (exports.ReferenceKind = {}));
-var ReferenceKind = exports.ReferenceKind;
+})(ReferenceKind = exports.ReferenceKind || (exports.ReferenceKind = {}));
 function transfer(f, target) {
     target[f.facetName()] = f.value();
 }
 var JavaScriptMetaEmmitter = (function (_super) {
     __extends(JavaScriptMetaEmmitter, _super);
     function JavaScriptMetaEmmitter() {
-        var _this = this;
-        _super.call(this);
-        this.facetMap = {};
-        this.extraTypes = {};
-        this.visited = new Map();
-        this.extraMeta = new Map();
-        this.idToType = {};
-        this.facetMap["discriminatorValue"] = function (t, f, target) {
+        var _this = _super.call(this) || this;
+        _this.facetMap = {};
+        _this.extraTypes = {};
+        _this.visited = new Map();
+        _this.extraMeta = new Map();
+        _this.idToType = {};
+        _this.facetMap["discriminatorValue"] = function (t, f, target) {
             if (f.value() == t.name()) {
                 return;
             }
             transfer(f, target);
         };
-        this.facetMap["items"] = function (t, f, target) {
+        _this.facetMap["items"] = function (t, f, target) {
             var vl = _this.emitType(f);
             if (!vl.id) {
                 target["itemType"] = vl;
@@ -326,7 +327,7 @@ var JavaScriptMetaEmmitter = (function (_super) {
                 target["itemType"] = vl.id;
             }
         };
-        this.facetMap["propertyIs"] = function (t, f, target) {
+        _this.facetMap["propertyIs"] = function (t, f, target) {
             var vl = _this.emitType(f);
             if (!target["properties"]) {
                 var p = {};
@@ -339,7 +340,7 @@ var JavaScriptMetaEmmitter = (function (_super) {
                 target["properties"][f.name] = vl.id;
             }
         };
-        this.facetMap["mapPropertyIs"] = function (t, f, target) {
+        _this.facetMap["mapPropertyIs"] = function (t, f, target) {
             var vl = _this.emitType(f);
             if (!target["componentType"]) {
                 var p = {};
@@ -352,6 +353,7 @@ var JavaScriptMetaEmmitter = (function (_super) {
                 target["componentType"] = vl.id;
             }
         };
+        return _this;
     }
     JavaScriptMetaEmmitter.prototype.emitType = function (f) {
         var vl = this.processParsedType(f.type, false);
@@ -440,10 +442,20 @@ var JavaScriptMetaEmmitter = (function (_super) {
     JavaScriptMetaEmmitter.prototype.visitMethod = function (t) {
         var _this = this;
         var id = t.methodId();
+        var dn = t.displayName() ? t.displayName() : t.parentResource().displayName();
+        if (!dn) {
+            dn = "";
+        }
+        if (dn.indexOf("/") == 0) {
+            dn = dn.substring(1);
+        }
+        if (dn.length > 1) {
+            dn = dn.charAt(0).toUpperCase() + dn.substring(1);
+        }
         var result = {
             id: this.normalizeId(t.methodId()),
             baseUri: t.ownerApi().baseUri() ? t.ownerApi().baseUri().value() : null,
-            displayName: t.displayName() ? t.displayName() : t.parentResource().displayName(),
+            displayName: dn,
             description: t.description() ? t.description().value() : null,
             url: t.parentResource().completeRelativeUri(),
             method: t.method(),
@@ -748,6 +760,28 @@ var JavaScriptMetaEmmitter = (function (_super) {
                     props[x] = {
                         type: "string",
                         computeFunction: val,
+                        readonly: true,
+                        virtual: true
+                    };
+                }
+                else {
+                    props[x] = val;
+                }
+            });
+        }
+        if (rs["foreignProperties"]) {
+            var cp = rs["foreignProperties"];
+            Object.keys(cp).forEach(function (x) {
+                if (!rs["properties"]) {
+                    rs["properties"] = {};
+                }
+                var props = rs["properties"];
+                var prop = {};
+                var val = cp[x];
+                if (typeof val == "string") {
+                    props[x] = {
+                        type: "string",
+                        remote: val,
                         readonly: true,
                         virtual: true
                     };

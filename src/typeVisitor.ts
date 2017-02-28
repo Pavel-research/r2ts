@@ -432,7 +432,10 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
     visitMethod(t: rp.api10.Method) {
         var id=t.methodId();
         var dn=t.displayName()?t.displayName():t.parentResource().displayName();
-        if (dn.startsWith("/")){
+        if (!dn){
+            dn="";
+        }
+        if (dn.indexOf("/")==0){
             dn=dn.substring(1);
 
         }

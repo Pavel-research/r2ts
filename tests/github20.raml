@@ -65,7 +65,7 @@ securedBy: basic
               type: ght.Issue[]
               (core.columns):  [ title, created_at, updated_at, state ]
     post:
-      (core.create): Issue
+      (core.create): ght.Issue
       displayName: Create Issue
       body: ght.CreateIssue
       responses:
@@ -77,7 +77,7 @@ securedBy: basic
           type: integer
           (core.reference): ght.Issue.number
       patch:
-        (core.update): Issue
+        (core.update): ght.Issue
         body: ght.EditIssue
         responses:
           200:
