@@ -853,6 +853,33 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
                 }
             })
         }
+        if (rs["actions"]){
+            var cp=rs["actions"];
+            Object.keys(cp).forEach(x=>{
+                if (!rs["properties"]){
+                    rs["properties"]={};
+                }
+                var props=rs["properties"]
+                var prop={};
+                var val=cp[x];
+                if (typeof val=="string"){
+                    props[x]={
+                        type: "action",
+                        body: val,
+                        // readonly:true,
+                        // virtual: true
+                    }
+
+                }
+                else{
+                    props[x]=val;
+                    if (!val["type"]){
+                        val["type"]="action";
+                    }
+                }
+            })
+        }
+        delete rs["actions"];
         return rs;
     }
     private appendRequiredInfo(pType: ti.IParsedType, rs: any) {

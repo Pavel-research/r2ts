@@ -80,11 +80,32 @@ export function process(x:rp.api10.LibraryBase):ProcessingResult{
         Object.keys(emmitter.extraTypes).forEach(x=>{
             rs.types[x]=emmitter.extraTypes[x];
         })
+        Object.keys(rs.types).forEach(k=>{
+            createAiliases(rs.types[k])
+        })
 
     }
     return rs;
 }
+function createAiliases(t:rtb.Type){
+    var am:any={};
+    if ((<any>t).properties){
+        Object.keys((<any>t).properties).forEach(z=>{
+            if (z.charAt(0)=='_'){
+                console.log(z);
+                var mm=((<any>t).properties)[z];
+                if (mm.displayName){
+                    am[mm.displayName.toLowerCase()]=z;
+                }
+            }
 
+        })
+    }
+    if (Object.keys(am).length>0){
+        (<any>t).aliases=am;
+    }
+
+}
 export function parseToJSON(url:string,f:(v:ProcessingResult)=>void){
 
     rp.loadRAML(url,[]).then( (x)=>{
