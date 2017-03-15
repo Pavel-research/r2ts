@@ -111,4 +111,5 @@ export function parseToJSON(url:string,f:(v:ProcessingResult)=>void){
     rp.loadRAML(url,[]).then( (x)=>{
         f(process(<any>x));
     })
+        .catch(e=>{console.log("Error:");console.log(e)})
 }

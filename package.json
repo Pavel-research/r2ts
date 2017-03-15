@@ -1,6 +1,6 @@
 {
-  "name": "raml2type-bindings",
-  "version": "0.0.7",
+  "name": "raml2ts",
+  "version": "0.0.8",
   "private": false,
   "scripts": {
     "compile": "rm -rf dist/ && ./node_modules/typescript/bin/tsc"
@@ -25,9 +25,13 @@
   "directories": [
     "dist"
   ],
+  "bin": {
+    "r2ts": "./dist/src/transform.js"
+  },
   "dependencies": {
     "@types/node": "^6.0.55",
     "@types/pluralize": "0.0.27",
+    "commander": "^2.9.0",
     "pluralize": "^3.1.0",
     "raml-1-parser": "^1.1.13",
     "ts-model": "0.0.13"
