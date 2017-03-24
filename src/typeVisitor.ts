@@ -534,7 +534,7 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
         (<any>result).annotations=clearedAnnotations;
         t.responses().forEach(x=>{
             if (x.isOkRange()){
-                if (x.body()){
+                if (x.body()&&x.body().length>0){
                     var tp=this.visitStructure(x.body()[0].runtimeType());
                     result.result=<rtb.Type><any>tp.payload;
                 }

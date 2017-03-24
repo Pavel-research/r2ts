@@ -5,10 +5,9 @@ import  mocha=require("mocha")
 import rp=require("raml-1-parser");
 import path=require("path")
 import tsm=require("ts-model");
-import {JavaScriptMetaEmmitter} from "../src/typeVisitor";
+import {JavaScriptMetaEmmitter, TypeScriptInterfaceEmmitter} from "../src/typeVisitor";
 import main=require("../src/main")
-
-
+import {InterfaceGenerator} from "../src/interfaceGenerator";
 describe("Simple bindings tests", function () {
     it("schema with reference, example is valid", function () {
         var rs = <rp.api10.Library>rp.loadRAMLSync(path.resolve(__dirname, "../../tests/types.raml"), []);
@@ -194,5 +193,18 @@ describe("Simple bindings tests", function () {
         var pr = main.process(rs);
         assert(pr.types["githubTypes_Issue"].constructors.length == 1);
         assert(pr.types["githubTypes_Issue"].updaters.length == 1);
+    })
+})
+describe("Emmiting types", function () {
+    it("schema with reference, example is valid", function () {
+        var rs = <rp.api10.Library>rp.loadRAMLSync(path.resolve(__dirname, "../../tests/types.raml"), []);
+        var pr=main.process(rs);
+        //var nmm = new TypeScriptInterfaceEmmitter();
+        var g=new InterfaceGenerator();
+        Object.keys(pr.types).forEach(x=>{
+            g.visitType(pr.types[x]);
+        });
+        console.log("******")
+        console.log(g.toString());
     })
 })
