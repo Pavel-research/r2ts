@@ -356,6 +356,7 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
         return {
             id:t.name(),
             kind: t.type(),
+            type: "securityDefinition",
             displayName: t.displayName(),
             description: t.description()?t.description().value():"",
             settings:t.settings()?t.settings().toJSON():{}
@@ -442,7 +443,7 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
         if (dn.length>1){
             dn=dn.charAt(0).toUpperCase()+dn.substring(1);
         }
-        var result:rtb.Operation={
+        var result:rtb.Operation&any={
             id:this.normalizeId(t.methodId()),
             baseUri: t.ownerApi().baseUri()?t.ownerApi().baseUri().value():null,
             displayName:dn,
@@ -451,6 +452,7 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
             method: t.method(),
             parameters:[],
             annotations:{},
+            relativeUrl:t.parentResource().relativeUri().value(),
             result:null,
             executorId: "rest"
         }

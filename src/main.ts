@@ -92,7 +92,7 @@ function createAiliases(t:rtb.Type){
     if ((<any>t).properties){
         Object.keys((<any>t).properties).forEach(z=>{
             if (z.charAt(0)=='_'){
-                console.log(z);
+                //console.log(z);
                 var mm=((<any>t).properties)[z];
                 if (mm.displayName){
                     am[mm.displayName.toLowerCase()]=z;

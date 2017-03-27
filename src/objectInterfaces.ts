@@ -2,6 +2,7 @@
  * Created by kor on 22/03/17.
  */
 
+
 export interface CRUDObject<T>{
 
     persist():Promise<T>

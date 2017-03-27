@@ -40,8 +40,10 @@ securedBy: basic
     owner:
       (core.reference): ght.Repository.owner.login
   /milestones:
+    (core.memberCollection): ght.Repository
     type:  { list: {ItemType : ght.Milestone} }
   /labels:
+    (core.memberCollection): ght.Repository
     type:  { list: {ItemType : ght.Label} }
   /issues:
     get:
