@@ -78,7 +78,74 @@ export class ClientGenerator extends TSInterface{
     constructor(parent:TSAPIModule,name:string,private gen:InterfaceGenerator){
         super(parent,name);
     }
+    types:{[name:string]:rtb.Type}
 
+    setTypes(v:{[name:string]:rtb.Type}){
+        this.types=v;
+    }
+    collectMethods(name:string,t:rtb.Type,op:rtb.Operation[]){
+        var vl:string[]=t[name];
+        if (vl){
+            vl.forEach(x=>{op.push(<any>this.types[x])})
+        }
+    }
+    recordType(t:rtb.Type){
+        var ops:rtb.Operation[]=[];
+        //this.collectMethods("details",t,ops);
+        this.collectMethods("constructors",t,ops);
+        //this.collectMethods("actions",t,ops);
+        this.collectMethods("updaters",t,ops);
+        //this.collectMethods("destructors",t,ops);
+        this.collectMethods("listers",t,ops);
+        if (ops.length==0){
+            return;
+        }
+        var name=t.id;
+        if (name.indexOf('_')!=-1){
+            name=name.substring(name.indexOf('_')+1).toLowerCase();
+        }
+        var type=new TSAPIElementDeclaration(this,name);
+
+        var ss=new TSInterface(this.parent(),t.id+"Service");
+        type.rangeType=new TSSimpleTypeReference(null, ss.name)
+        ops.forEach(x=>this.addOp(ss,x));
+    }
+
+    addOp(parent:TSInterface,v:rtb.Operation){
+        var name=v.id;
+        if (Object.keys(v).indexOf('list')!=-1){
+            name="list";
+        }
+        if (Object.keys(v).indexOf('create')!=-1){
+            name="create";
+        }
+        if (Object.keys(v).indexOf('update')!=-1){
+            name="update";
+        }
+        if ((<any>v).method){
+            name=(<any>v).method;
+        }
+        var element=new TSAPIElementDeclaration(parent,name);
+        element.isFunc=true;
+        var q:any=v.result;
+        v.parameters.forEach(x=>{
+            element.parameters.push(new Param(element,x.id,null,this.gen.toRef(x.type)))
+        })
+        if (!q){
+            q=(<any>v).itemType;
+        }
+        if (q) {
+            if (typeof q=="string"){
+                element.rangeType = new TSSimpleTypeReference(null,q);
+            }
+            else  if (q.type){
+                return element.rangeType = this.gen.toRef(q.type);
+            }
+        }
+        else{
+            element.rangeType=new TSSimpleTypeReference(null,"void");
+        }
+    }
     addOperation(v:rtb.Operation){
         if (this.referencedIds[v.id]){
             return;
@@ -86,27 +153,8 @@ export class ClientGenerator extends TSInterface{
         var opurl=(<any>v).url;
         //now we need to generate an http method for this operation;
         var segments:string[]=opurl.split("/");
-
-           var element=new TSAPIElementDeclaration(this,v.id);
-           element.isFunc=true;
-           var q:any=v.result;
-           v.parameters.forEach(x=>{
-               element.parameters.push(new Param(element,x.id,null,this.gen.toRef(x.type)))
-           })
-           if (!q){
-               q=(<any>v).itemType;
-           }
-           if (q) {
-               if (typeof q=="string"){
-                   element.rangeType = new TSSimpleTypeReference(null,q);
-               }
-               else  if (q.type){
-                   return element.rangeType = this.gen.toRef(q.type);
-               }
-           }
-           else{
-               element.rangeType=new TSSimpleTypeReference(null,"void");
-           }
+        var parent:TSInterface=this;
+        this.addOp(parent,v);
     }
 }
 
@@ -128,9 +176,25 @@ export class InterfaceGenerator {
                 return;
             }
         })
+        this.client.setTypes(t.types);
+        Object.keys(t.types).forEach(x => {
+            var tp=t.types[x];
+            if (rtb.service.isSubtypeOf(tp,rtb.TYPE_OBJECT)){
+                this.client.recordType(<any>tp);
+                return;
+            }
+        })
         new StaticBody(this.module,"a");
     }
-
+    addMethods(me:(rtb.Operation | string)[],i:TSInterface,ot:rtb.ObjectType){
+        if (me){
+            me.forEach(x=>{
+                if (typeof x=="string"){
+                    this.client.refefence(x);
+                }
+            })
+        }
+    }
     visitType(t: rtb.Type) {
 
         if (rtb.service.isObject(t)) {
@@ -165,6 +229,11 @@ export class InterfaceGenerator {
                     //rp._body=`_q:string`
                 })
             }
+            this.addMethods(ot.details,ti,ot);
+            this.addMethods(ot.constructors,ti,ot);
+            this.addMethods(ot.updaters,ti,ot);
+            this.addMethods(ot.listers,ti,ot);
+
         }
         else if (rtb.service.isMap(t)) {
             var ti = new TSInterface(this.module, t.id);
@@ -185,9 +254,6 @@ export class InterfaceGenerator {
             }
             if (rtb.service.isSubtypeOf(t,rtb.TYPE_SECURITYDEFINITION)){
                 return;
-            }
-            if (t.id==undefined){
-                console.log("A")
             }
             var ttt = new TypeDeclReference(t.id, this.toRef(t));
             (<any>ttt).extends = [];
