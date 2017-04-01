@@ -4,6 +4,7 @@ baseUri: https://api.github.com/
 mediaType: application/json
 uses:
   core: coreLib2.raml
+  client: clients.raml
   ght: githubTypes.raml
 resourceTypes:
   list:
@@ -21,6 +22,7 @@ securedBy: basic
 /user/orgs:
   type:  { list: {ItemType : ght.Organization} }
   (core.columns): ['login']
+  (client.methodName): getUserOrgs
 /orgs/{org}:
   uriParameters:
     org:

@@ -58,8 +58,11 @@ export class StaticBody extends TSInterface{
 
     serializeToString():string{
         return `
+            declare function require(v:string):any
             export function client(options:any):_CLIENT_INTERFACE{
-                return null;            
+                var module=require('./types.ts');
+                var rtb:any=require('raml-type-bindings');
+                return rtb.createClient(module,options)
             }
         `
     }
@@ -104,15 +107,56 @@ export class ClientGenerator extends TSInterface{
         if (name.indexOf('_')!=-1){
             name=name.substring(name.indexOf('_')+1).toLowerCase();
         }
-        var type=new TSAPIElementDeclaration(this,name);
+
 
         var ss=new TSInterface(this.parent(),t.id+"Service");
-        type.rangeType=new TSSimpleTypeReference(null, ss.name)
+
         ops.forEach(x=>this.addOp(ss,x));
+        if (ss.children().length==0){
+            this.parent().removeChild(ss);
+            return;
+        }
+        var type=new TSAPIElementDeclaration(this,name);
+        type.rangeType=new TSSimpleTypeReference(null, ss.name)
     }
 
+    typeFromRef(r0:string):rtb.Type{
+
+        if (r0.indexOf('.')!=-1){
+            r0=r0.substring(0,r0.indexOf('.'))
+        }
+        return this.types[r0];
+    }
+
+    isComputable(r0:string,r1:string){
+        var t0=this.typeFromRef(r0);
+        var t1=this.typeFromRef(r1);
+        if (t0==t1){
+            return true;
+        }
+        var rs=false;
+        rtb.service.properties(t0).forEach(x=>{
+            if (rtb.service.isSubtypeOf(x,t1)){
+                rs=true
+            }
+        });
+        return rs;
+    }
+    serializeToString(){
+        return super.serializeToString()+`export interface Collection<T>{
+    count(): number
+    all(): Promise<T[]>
+    forEach( f:(c:T)=>void): void
+    map<A>( f:(c:T)=>A): Collection<A>
+    filter(options:any):Collection<T>
+    sort(options:any):Collection<T>
+}`
+    }
     addOp(parent:TSInterface,v:rtb.Operation){
         var name=v.id;
+        if (v.type=="view"&&(<any>v).memberCollection){
+            return;
+        }
         if (Object.keys(v).indexOf('list')!=-1){
             name="list";
         }
@@ -125,11 +169,49 @@ export class ClientGenerator extends TSInterface{
         if ((<any>v).method){
             name=(<any>v).method;
         }
+        if ((<any>v).methodName){
+            name=(<any>v).methodName;
+        }
+
+        var allRefs=v.parameters.filter(x=>(<any>x).reference)
+        for (var i=0;i<allRefs.length;i++){
+            for (var j=0;j<allRefs.length;j++){
+                if (i!=j) {
+                    var r0 = (<any>allRefs[i]).reference;
+                    var r1 = (<any>allRefs[j]).reference;
+                    if (this.isComputable(r0, r1)) {
+                        allRefs=allRefs.filter(x=>x!=allRefs[j]);
+                    }
+                    else if (this.isComputable(r1, r0)) {
+                        allRefs=allRefs.filter(x=>x!=allRefs[i]);
+                    }
+                }
+            }
+        }
+        if (allRefs.length>0) {
+            var baseType = this.typeFromRef((<any>allRefs[0]).reference).id;
+            this.parent().children().forEach(x => {
+                if (x instanceof TSInterface) {
+                    if (baseType.endsWith(x.name)) {
+                        parent = x;
+                    }
+                }
+            })
+            var rr=allRefs[0]
+            allRefs=allRefs.filter(x=>x!=rr);
+        }
         var element=new TSAPIElementDeclaration(parent,name);
         element.isFunc=true;
         var q:any=v.result;
+        allRefs.forEach(x=>{
+            //if (!(<any>x).reference) {
+                element.parameters.push(new Param(element, x.id, null, new TSSimpleTypeReference(null,this.typeFromRef((<any>x).reference).id)))
+            //}
+        })
         v.parameters.forEach(x=>{
-            element.parameters.push(new Param(element,x.id,null,this.gen.toRef(x.type)))
+            if (!(<any>x).reference) {
+                element.parameters.push(new Param(element, x.id, null, this.gen.toRef(x.type)))
+            }
         })
         if (!q){
             q=(<any>v).itemType;
@@ -157,12 +239,19 @@ export class ClientGenerator extends TSInterface{
         this.addOp(parent,v);
     }
 }
+export class CollectionReference extends TSArrayReference{
 
+    serializeToString(){
+        return "Collection<"+this.componentType.serializeToString()+">"
+    }
+}
 export class InterfaceGenerator {
 
     module: TSAPIModule = new TSAPIModule();
     client=new ClientGenerator(this.module,"_CLIENT_INTERFACE",this);
+
     process(t: {types: {[name: string]: rtb.Type}}) {
+
         Object.keys(t.types).forEach(x => rtb.service.register(t.types[x]))
         Object.keys(t.types).forEach(x => this.visitType(t.types[x]))
         Object.keys(t.types).forEach(x => {
@@ -216,7 +305,7 @@ export class InterfaceGenerator {
                         this.client.refefence(tp.type);
                         var rp = new TSAPIElementDeclaration(ti, name);
                         rp.isFunc=true;
-                        var range=this.toRef(rtb.service.componentType(mm));
+                        var range=new CollectionReference(this.toRef(rtb.service.componentType(mm)));
                         rp.rangeType=range;
                         return;
                     }

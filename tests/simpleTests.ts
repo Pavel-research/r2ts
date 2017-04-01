@@ -215,6 +215,7 @@ describe("Emmiting types", function () {
         console.log(g.toString())
         compile(g.toString(),{noImplicitAny: true,module: "commonjs"});
         fs.writeFileSync(__dirname+"../../../tests/api.ts",g.toString());
+        fs.writeFileSync(__dirname+"../../../tests/types.ts","export="+JSON.stringify(pr,null,2));
         //console.log(g.toString());
     })
 })
