@@ -60,7 +60,7 @@ export class StaticBody extends TSInterface{
         return `
             declare function require(v:string):any
             export function client(options:any):_CLIENT_INTERFACE{
-                var module=require('./types.ts');
+                var module=require('./types');
                 var rtb:any=require('raml-type-bindings');
                 return rtb.createClient(module,options)
             }
@@ -146,7 +146,7 @@ export class ClientGenerator extends TSInterface{
         return super.serializeToString()+`export interface Collection<T>{
     count(): number
     all(): Promise<T[]>
-    forEach( f:(c:T)=>void): void
+    forEach( f:(c:T)=>void|Promise<any>): Promise<void>
     map<A>( f:(c:T)=>A): Collection<A>
     filter(options:any):Collection<T>
     sort(options:any):Collection<T>
@@ -213,8 +213,10 @@ export class ClientGenerator extends TSInterface{
                 element.parameters.push(new Param(element, x.id, null, this.gen.toRef(x.type)))
             }
         })
+        var collection=false;
         if (!q){
             q=(<any>v).itemType;
+            collection=true;
         }
         if (q) {
             if (typeof q=="string"){
@@ -226,6 +228,9 @@ export class ClientGenerator extends TSInterface{
         }
         else{
             element.rangeType=new TSSimpleTypeReference(null,"void");
+        }
+        if (collection){
+            element.rangeType=new CollectionReference(element.rangeType);
         }
     }
     addOperation(v:rtb.Operation){

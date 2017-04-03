@@ -1,9 +1,10 @@
 "use strict";
 var chai = require("chai");
+var Reflect = require('harmony-reflect');
 var assert = chai.assert;
 import  mocha=require("mocha")
 import rp=require("raml-1-parser");
-var compile=require('typescript-simple');
+var compile = require('typescript-simple');
 
 import path=require("path")
 import tsm=require("ts-model");
@@ -201,21 +202,33 @@ import {InterfaceGenerator} from "../src/interfaceGenerator";
 describe("Emmiting types", function () {
     it("schema with reference, example is valid", function () {
         var rs = <rp.api10.Library>rp.loadRAMLSync(path.resolve(__dirname, "../../tests/types2.raml"), []);
-        var pr=main.process(rs);
-        var g=new InterfaceGenerator();
+        var pr = main.process(rs);
+        var g = new InterfaceGenerator();
         g.process(pr);
-        compile(g.toString(),{noImplicitAny: true,module: "commonjs"});
+        compile(g.toString(), {noImplicitAny: true, module: "commonjs"});
         //console.log(g.toString());
     })
     it("ght", function () {
         var rs = <rp.api10.Library>rp.loadRAMLSync(path.resolve(__dirname, "../../tests/github20.raml"), []);
-        var pr=main.process(rs);
-        var g=new InterfaceGenerator();
+        var pr = main.process(rs);
+        var g = new InterfaceGenerator();
         g.process(pr);
         console.log(g.toString())
-        compile(g.toString(),{noImplicitAny: true,module: "commonjs"});
-        fs.writeFileSync(__dirname+"../../../tests/api.ts",g.toString());
-        fs.writeFileSync(__dirname+"../../../tests/types.ts","export="+JSON.stringify(pr,null,2));
+        compile(g.toString(), {noImplicitAny: true, module: "commonjs"});
+        fs.writeFileSync(__dirname + "../../../tests/api.ts", g.toString());
+        fs.writeFileSync(__dirname + "../../../tests/types.ts", "export=" + JSON.stringify(pr, null, 2));
         //console.log(g.toString());
+    })
+})
+import ght=require("./api")
+import tp=require("./types")
+describe("Test Client", function () {
+    this.timeout(50000);
+    var orgs = ght.client({user: "", password: ""}).organization;
+    it("ght", function (done) {
+        var mm = orgs.getUserOrgs();
+        mm.forEach(x => x.repos().forEach(r => {
+            console.log(r.name);
+        })).then(() => done());
     })
 })
