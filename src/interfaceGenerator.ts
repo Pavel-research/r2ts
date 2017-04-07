@@ -59,6 +59,7 @@ export class StaticBody extends TSInterface{
     serializeToString():string{
         return `
             declare function require(v:string):any
+            var Reflect = require('harmony-reflect');
             export function client(options:any):_CLIENT_INTERFACE{
                 var module=require('./types');
                 var rtb:any=require('raml-type-bindings');
@@ -112,9 +113,14 @@ export class ClientGenerator extends TSInterface{
         var ss=new TSInterface(this.parent(),t.id+"Service");
 
         ops.forEach(x=>this.addOp(ss,x));
-        if (ss.children().length==0){
-            this.parent().removeChild(ss);
-            return;
+        // if (ss.children().length==0){
+        //     this.parent().removeChild(ss);
+        //     return;
+        // }
+        if (name=="repository") {
+            var h = new TSAPIElementDeclaration(ss, "handle");
+            h.parameters.push(new Param(null, "org", null, new TSSimpleTypeReference(null, "string")))
+            h.parameters.push(new Param(null, "repo", null, new TSSimpleTypeReference(null, "string")))
         }
         var type=new TSAPIElementDeclaration(this,name);
         type.rangeType=new TSSimpleTypeReference(null, ss.name)
@@ -192,7 +198,7 @@ export class ClientGenerator extends TSInterface{
             var baseType = this.typeFromRef((<any>allRefs[0]).reference).id;
             this.parent().children().forEach(x => {
                 if (x instanceof TSInterface) {
-                    if (baseType.endsWith(x.name)) {
+                    if (baseType!=null&&baseType.indexOf(x.name)!=-1) {
                         parent = x;
                     }
                 }

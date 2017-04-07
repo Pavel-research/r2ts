@@ -90,7 +90,7 @@ body?:string
 }
 
 export interface githubTypes_EditIssue extends githubTypes_CreateIssue{
-state:string
+state?:string
 }
 
 export interface githubTypes_Comment extends githubTypes_Base{}
