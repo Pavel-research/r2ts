@@ -113,3 +113,8 @@ export function parseToJSON(url:string,f:(v:ProcessingResult)=>void){
     })
         .catch(e=>{console.log("Error:");console.log(e)})
 }
+
+export function parseSync(url:string):ProcessingResult{
+    var rs = <rp.api10.Library>rp.loadRAMLSync(url, []);
+    return process(rs);
+}

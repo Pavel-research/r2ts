@@ -393,19 +393,22 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
             }
         })
         var result=ReferenceKind.NONE;
-        usedLibrary.annotationTypes().forEach(x=>{
-            if (x.name()==annotationName){
-                var tp=x.type();
-                tp.forEach(n=>{
-                    if (n.indexOf("RAMLReferenceExpression")!=-1){
-                        result=ReferenceKind.PROPERTY;
-                    }
-                    if (n.indexOf("RAMLTypeName")!=-1){
-                        result=ReferenceKind.TYPE;
-                    }
-                })
-            }
-        })
+        if (usedLibrary) {
+            usedLibrary.annotationTypes().forEach(x => {
+                if (x.name() == annotationName) {
+                    var tp = x.type();
+                    tp.forEach(n => {
+                        if (n.indexOf("RAMLReferenceExpression") != -1) {
+                            result = ReferenceKind.PROPERTY;
+                        }
+                        if (n.indexOf("RAMLTypeName") != -1) {
+                            result = ReferenceKind.TYPE;
+                        }
+                    })
+                }
+            })
+        }
+        //this is strange
         return result;
     }
     remapUnit(namespace:string,t:rp.api10.Api|rp.api10.Library){
@@ -527,7 +530,6 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
                                 //console.log(vl);
                             }
                         }
-
                     }
                 }
                 clearedAnnotations[n]=x[y];

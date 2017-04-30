@@ -56,9 +56,7 @@ export interface PagedCollectionWithDetails<D,T extends CRUDObject<D>> extends P
 export interface IssuesCollection extends PagedCollectionWithDetails<IssueDetails,Issue>,issueFilters{
 
 }
-
 declare function issues():IssuesCollection
-
 
 export interface ObjectFilters{
 

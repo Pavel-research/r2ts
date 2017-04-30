@@ -1,6 +1,6 @@
 {
   "name": "raml2ts",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "private": false,
   "scripts": {
     "compile": "rm -rf dist/ && ./node_modules/typescript/bin/tsc"
