@@ -1,0 +1,45 @@
+#%RAML 1.0 Library
+types:
+  core:
+      type: object
+      properties:
+        rt?:
+          type: array
+          items :
+              type : string
+              maxLength: 64
+          minItems : 1
+          description: "Resource Type"
+
+        if?:
+          type : array
+          description: "The interface set supported by this resource"
+          items:
+            type: string
+            enum : ["oic.if.baseline", "oic.if.ll", "oic.if.b", "oic.if.lb", "oic.if.rw", "oic.if.r", "oic.if.a", "oic.if.s" ]
+        n?:
+          type: string
+          description: "Friendly name of the resource"
+        id?:
+          type: string
+          description : "Instance ID of this specific resource"
+  Baseresource:
+      type: core
+      properties:
+         value?:
+          type: any
+          description: "The value sensed or actuated by this Resource"
+         precision?:
+          type:  number
+          description: "Accuracy granularity of the exposed value"
+         range?:
+          type : array
+          description: "The valid range for the value Property"
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number | integer
+         step?:
+          description: "Step value across the defined range"
+          type: number | integer
+  

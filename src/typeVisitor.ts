@@ -747,7 +747,15 @@ export class JavaScriptMetaEmmitter extends TypeVisitor<TSModelElement<any>> {
             if (superTypes.length==0){
                 superTypes.push("union")
             }
-            var v=this.gatherTypes((<any>pType)._options);
+            var opts=(<any>pType)._options;
+            if (!opts){
+                pType.superTypes().forEach(x=>{
+                    if (!opts) {
+                        opts = (<any>x)._options;
+                    }
+                })
+            }
+            var v=this.gatherTypes(opts);
             rs["options"]=v.map(x=>this.alias(x));
         }
         if (f.filter(x=>x.facetName()=="mapPropertyIs").length>0){
