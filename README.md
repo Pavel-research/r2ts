@@ -1,7 +1,12 @@
-#RAML2TS
+# RAML2TS
 
 At this moment goal of this module is to convert RAML files into JSON structures, 
 which can be easily parsed and processed by type bindings module.
+
+
+Also this repository contains example code genrating typescript clients in
+an object oriented way.
+
 
 In a few words it performs following transformations:
 
